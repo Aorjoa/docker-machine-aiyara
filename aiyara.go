@@ -3,53 +3,44 @@ package aiyara
 import (
 	"fmt"
 	"path/filepath"
-
-	log "github.com/Sirupsen/logrus"
-	"github.com/codegangsta/cli"
-	// "github.com/docker/docker/api"
-	"github.com/docker/machine/drivers"
-	"github.com/docker/machine/provider"
-	"github.com/docker/machine/ssh"
-	"github.com/docker/machine/state"
+	"github.com/docker/machine/libmachine/mcnflag"
+	"github.com/docker/machine/libmachine/drivers"
+	"github.com/docker/machine/libmachine/log"
+	"github.com/docker/machine/libmachine/ssh"
+	"github.com/docker/machine/libmachine/state"
 )
 
 // Driver is the driver used when no driver is selected. It is used to
 // connect to existing Docker hosts by specifying the URL of the host as
 // an option.
 type Driver struct {
+	*drivers.BaseDriver
 	MachineName string
 	StorePath   string
-
+	
 	Host      string
 	SSHPort   int
 	SSHUser   string
 	sshPasswd string
 }
 
-func init() {
-	drivers.Register("aiyara", &drivers.RegisteredDriver{
-		New:            NewDriver,
-		GetCreateFlags: GetCreateFlags,
-	})
-}
-
-func GetCreateFlags() []cli.Flag {
-	return []cli.Flag{
-		cli.StringFlag{
+func (d *Driver) GetCreateFlags()  []mcnflag.Flag {
+	return []mcnflag.Flag{
+		mcnflag.StringFlag{
 			Name:  "aiyara-host-range",
 			Usage: "Aiyara Node IP addresses in [from:to] format",
 		},
-		cli.IntFlag{
+		mcnflag.IntFlag{
 			Name:  "aiyara-ssh-port",
 			Usage: "Aiyara SSH port",
 			Value: 22,
 		},
-		cli.StringFlag{
+		mcnflag.StringFlag{
 			Name:  "aiyara-ssh-user",
 			Usage: "Aiyara user name to connect via SSH",
 			Value: "root",
 		},
-		cli.StringFlag{
+		mcnflag.StringFlag{
 			Name:  "aiyara-ssh-passwd",
 			Usage: "Aiyara host password, must be same for the whole cluster",
 			Value: "1234",
@@ -57,12 +48,14 @@ func GetCreateFlags() []cli.Flag {
 	}
 }
 
-func NewDriver(machineName string, storePath string, caCert string, privateKey string) (drivers.Driver, error) {
-	return &Driver{MachineName: machineName, StorePath: storePath}, nil
-}
-
-func (d *Driver) AuthorizePort(ports []*drivers.Port) error {
-	return nil
+func NewDriver(hostName, storePath string) *Driver {
+	d := &Driver{
+		BaseDriver: &drivers.BaseDriver{
+			MachineName: hostName,
+			StorePath:   storePath,
+		},
+	}
+	return d
 }
 
 func (d *Driver) Create() error {
@@ -79,10 +72,6 @@ func (d *Driver) createSSHKey() error {
 		return err
 	}
 
-	return nil
-}
-
-func (d *Driver) DeauthorizePort(ports []*drivers.Port) error {
 	return nil
 }
 
@@ -135,9 +124,6 @@ func (d *Driver) GetState() (state.State, error) {
 	return state.None, nil
 }
 
-func (d *Driver) GetProviderType() provider.ProviderType {
-	return provider.Remote
-}
 
 func (d *Driver) Kill() error {
 	return fmt.Errorf("hosts without a driver cannot be killed")

@@ -1,6 +1,6 @@
 .PHONY : build clean fmt release
 
-NAME=docker-machine-driver-vultr
+NAME=docker-machine-driver-aiyara
 VERSION:=$(shell git describe --abbrev=0 --tags)
 
 #ifdef $CIRCLE_BUILD_NUM
